@@ -17,21 +17,7 @@ type User struct {
 	Sex        string `json:"sex"`
 }
 
-type Success struct {
-	Message string `json:"message"`
-}
-
-type Failure struct {
-	Message string `json:"message"`
-}
-
-func jsonError(w http.ResponseWriter, err Failure, code int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(err)
-}
-
-func user(w http.ResponseWriter, r *http.Request) {
+var UserHandler = func(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	switch strings.ToUpper(r.Method) {
 	case http.MethodGet:
@@ -42,7 +28,7 @@ func user(w http.ResponseWriter, r *http.Request) {
 		f := Failure{
 			Message: "サポートされていないHTTPメソッドです。",
 		}
-		jsonError(w, f, http.StatusNotFound)
+		f.returnJSON(w, http.StatusNotFound)
 	}
 }
 
@@ -52,7 +38,7 @@ func get(w http.ResponseWriter, r *http.Request) {
 		f := Failure{
 			Message: "パラメータが不正です。",
 		}
-		jsonError(w, f, http.StatusBadRequest)
+		f.returnJSON(w, http.StatusBadRequest)
 		return
 	}
 	user := User{
@@ -70,14 +56,14 @@ func get(w http.ResponseWriter, r *http.Request) {
 		f := Failure{
 			Message: "システムエラーが発生しました",
 		}
-		jsonError(w, f, http.StatusInternalServerError)
+		f.returnJSON(w, http.StatusInternalServerError)
 	}
 	if _, err := fmt.Fprint(w, buf.String()); err != nil {
 		log.Println("Error:", err)
 		f := Failure{
 			Message: "システムエラーが発生しました",
 		}
-		jsonError(w, f, http.StatusInternalServerError)
+		f.returnJSON(w, http.StatusInternalServerError)
 		return
 	}
 }
@@ -88,31 +74,14 @@ func post(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&user); err != nil {
 		log.Println("Error:", err)
-	}
-
-	fmt.Printf("response body: %+v", user)
-
-	result := Success{Message: "正常に登録しました。"}
-	var buf bytes.Buffer
-	encoder := json.NewEncoder(&buf)
-	if err := encoder.Encode(result); err != nil {
-		log.Println("Error:", err)
 		f := Failure{
 			Message: "システムエラーが発生しました",
 		}
-		jsonError(w, f, http.StatusInternalServerError)
+		f.returnJSON(w, http.StatusInternalServerError)
 	}
-	if _, err := fmt.Fprint(w, buf.String()); err != nil {
-		log.Println("Error:", err)
-		f := Failure{
-			Message: "システムエラーが発生しました",
-		}
-		jsonError(w, f, http.StatusInternalServerError)
-		return
-	}
-}
 
-func Listen() {
-	http.HandleFunc("/user", user)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	fmt.Printf("response body: %+v\n", user)
+
+	s := Success{Message: "正常に登録しました。"}
+	s.returnJSON(w)
 }
