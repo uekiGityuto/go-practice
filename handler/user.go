@@ -5,11 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"github.com/uekiGityuto/go-practice/usecase"
 	"log"
 	"net/http"
 	"reflect"
 	"strings"
 )
+
+type User struct {
+	UseCase usecase.User
+}
+
+func NewUser(uc usecase.User) *User {
+	return &User{
+		UseCase: uc,
+	}
+}
 
 type Form struct {
 	FamilyName string `json:"family_name" validate:"required"`
@@ -49,7 +60,7 @@ func (form *Form) validate() (ok bool, result map[string]string) {
 	return ok, result
 }
 
-type User struct {
+type UserResponse struct {
 	ID         string `json:"id"`
 	FamilyName string `json:"family_name"`
 	GivenName  string `json:"given_name"`
@@ -57,13 +68,13 @@ type User struct {
 	Sex        string `json:"sex"`
 }
 
-var UserHandler = func(w http.ResponseWriter, r *http.Request) {
+func (h User) HandleUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	switch strings.ToUpper(r.Method) {
 	case http.MethodGet:
-		get(w, r)
+		h.get(w, r)
 	case http.MethodPost:
-		post(w, r)
+		h.post(w, r)
 	default:
 		f := Failure{
 			Message: "サポートされていないHTTPメソッドです。",
@@ -72,7 +83,7 @@ var UserHandler = func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func get(w http.ResponseWriter, r *http.Request) {
+func (h User) get(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
 		f := Failure{
@@ -81,12 +92,23 @@ func get(w http.ResponseWriter, r *http.Request) {
 		f.returnJSON(w, http.StatusBadRequest)
 		return
 	}
-	user := User{
-		ID:         id,
-		FamilyName: "ueki",
-		GivenName:  "yuto",
-		Age:        28,
-		Sex:        "男",
+
+	entity, err := h.UseCase.Find(id)
+	if err != nil {
+		log.Println("Error:", err)
+		f := Failure{
+			Message: "システムエラーが発生しました",
+		}
+		f.returnJSON(w, http.StatusInternalServerError)
+		return
+	}
+
+	user := UserResponse{
+		ID:         entity.ID.String(),
+		FamilyName: entity.FamilyName,
+		GivenName:  entity.GivenName,
+		Age:        entity.Age,
+		Sex:        entity.Sex,
 	}
 
 	var buf bytes.Buffer
@@ -97,6 +119,7 @@ func get(w http.ResponseWriter, r *http.Request) {
 			Message: "システムエラーが発生しました",
 		}
 		f.returnJSON(w, http.StatusInternalServerError)
+		return
 	}
 	if _, err := fmt.Fprint(w, buf.String()); err != nil {
 		log.Println("Error:", err)
@@ -108,7 +131,7 @@ func get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func post(w http.ResponseWriter, r *http.Request) {
+func (h User) post(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var form Form
 	dec := json.NewDecoder(r.Body)
@@ -118,6 +141,7 @@ func post(w http.ResponseWriter, r *http.Request) {
 			Message: "システムエラーが発生しました",
 		}
 		f.returnJSON(w, http.StatusInternalServerError)
+		return
 	}
 	if ok, result := form.validate(); !ok {
 		f := Failure{
@@ -128,7 +152,15 @@ func post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("response body: %+v\n", form)
+	//fmt.Printf("response body: %+v\n", form)
+	if err := h.UseCase.Save(form.FamilyName, form.GivenName, form.Age, form.Sex); err != nil {
+		log.Println("Error:", err)
+		f := Failure{
+			Message: "システムエラーが発生しました",
+		}
+		f.returnJSON(w, http.StatusInternalServerError)
+		return
+	}
 
 	s := Success{Message: "正常に登録しました。"}
 	s.returnJSON(w)
