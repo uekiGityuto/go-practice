@@ -7,25 +7,46 @@ import (
 	"github.com/go-playground/validator/v10"
 	"log"
 	"net/http"
+	"reflect"
 	"strings"
 )
 
 type Form struct {
 	FamilyName string `json:"family_name" validate:"required"`
 	GivenName  string `json:"given_name" validate:"required"`
-	Age        int    `json:"age" validate:"required"`
+	Age        int    `json:"age" validate:"required,gte=0"`
 	Sex        string `json:"sex" validate:"required"`
 }
 
-func (form *Form) validate() bool {
+func (form *Form) validate() (ok bool, result map[string]string) {
+	result = make(map[string]string)
 	validate := validator.New()
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
 	if err := validate.Struct(form); err != nil {
-		validationErrors := err.(validator.ValidationErrors)
-		fmt.Printf("validate result %+v\n", validationErrors)
-		return false
+		ok = false
+		errors := err.(validator.ValidationErrors)
+		for _, err := range errors {
+			switch err.StructField() {
+			case "FamilyName":
+				result[err.Field()] = err.Tag()
+			case "GivenName":
+				result[err.Field()] = err.Tag()
+			case "Age":
+				result[err.Field()] = err.Tag()
+			case "Sex":
+				result[err.Field()] = err.Tag()
+			}
+		}
 	} else {
-		return true
+		ok = true
 	}
+	return ok, result
 }
 
 type User struct {
@@ -98,9 +119,10 @@ func post(w http.ResponseWriter, r *http.Request) {
 		}
 		f.returnJSON(w, http.StatusInternalServerError)
 	}
-	if ok := form.validate(); !ok {
+	if ok, result := form.validate(); !ok {
 		f := Failure{
 			Message: "パラメータが不正です。",
+			Detail:  result,
 		}
 		f.returnJSON(w, http.StatusBadRequest)
 		return
