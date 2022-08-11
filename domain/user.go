@@ -2,7 +2,7 @@ package domain
 
 type User struct {
 	FamilyName string
-	LastName   string
+	GivenName  string
 	Age        int
-	Sex        int
+	Sex        string
 }
