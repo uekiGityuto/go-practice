@@ -12,7 +12,7 @@ func NewUser() *User {
 	return &User{}
 }
 
-func (_ User) Find(uuid uuid.UUID) (*entity.User, error) {
+func (*User) Find(uuid uuid.UUID) (*entity.User, error) {
 	user := &entity.User{
 		ID:         uuid,
 		FamilyName: "植木",
@@ -23,7 +23,7 @@ func (_ User) Find(uuid uuid.UUID) (*entity.User, error) {
 	return user, nil
 }
 
-func (_ User) Save(user *entity.User) error {
+func (*User) Save(user *entity.User) error {
 	fmt.Println("DBに登録しました。")
 	return nil
 }

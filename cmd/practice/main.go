@@ -15,7 +15,7 @@ func main() {
 }
 
 func listen() {
-	userHandler := handler.NewUser(usecase.NewUser(dao.NewUser()))
+	userHandler := handler.NewUser(*usecase.NewUser(dao.NewUser()))
 	http.HandleFunc("/user", userHandler.HandleUser)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

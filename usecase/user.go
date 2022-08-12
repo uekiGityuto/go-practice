@@ -10,13 +10,13 @@ type User struct {
 	repo repository.User
 }
 
-func NewUser(repo repository.User) User {
-	return User{
+func NewUser(repo repository.User) *User {
+	return &User{
 		repo: repo,
 	}
 }
 
-func (uc User) Find(id string) (*entity.User, error) {
+func (uc *User) Find(id string) (*entity.User, error) {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func (uc User) Find(id string) (*entity.User, error) {
 	return uc.repo.Find(uid)
 }
 
-func (uc User) Save(familyName string, givenName string, age int, sex string) error {
+func (uc *User) Save(familyName string, givenName string, age int, sex string) error {
 	user, err := entity.NewUser(familyName, givenName, age, sex)
 	if err != nil {
 		return err

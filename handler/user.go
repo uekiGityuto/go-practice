@@ -68,7 +68,7 @@ type UserResponse struct {
 	Sex        string `json:"sex"`
 }
 
-func (h User) HandleUser(w http.ResponseWriter, r *http.Request) {
+func (h *User) HandleUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	switch strings.ToUpper(r.Method) {
 	case http.MethodGet:
@@ -83,7 +83,7 @@ func (h User) HandleUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h User) get(w http.ResponseWriter, r *http.Request) {
+func (h *User) get(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
 		f := Failure{
@@ -131,7 +131,7 @@ func (h User) get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h User) post(w http.ResponseWriter, r *http.Request) {
+func (h *User) post(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var form Form
 	dec := json.NewDecoder(r.Body)
