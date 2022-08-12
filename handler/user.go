@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/uekiGityuto/go-practice/usecase"
+	"golang.org/x/xerrors"
 	"log"
 	"net/http"
 	"reflect"
@@ -95,7 +96,8 @@ func (h *User) get(w http.ResponseWriter, r *http.Request) {
 
 	entity, err := h.UseCase.Find(id)
 	if err != nil {
-		log.Println("Error:", err)
+		err = xerrors.Errorf("ユーザ情報取得が失敗しました。: %w", err)
+		log.Printf("Error: %+v\n", err)
 		f := Failure{
 			Message: "システムエラーが発生しました",
 		}
@@ -114,7 +116,8 @@ func (h *User) get(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	encoder := json.NewEncoder(&buf)
 	if err := encoder.Encode(user); err != nil {
-		log.Println("Error:", err)
+		err = xerrors.Errorf("レスポンスボディに書き込むユーザ情報のJSONシリアライズが失敗しました。: %w", err)
+		log.Printf("Error: %+v\n", err)
 		f := Failure{
 			Message: "システムエラーが発生しました",
 		}
@@ -122,7 +125,8 @@ func (h *User) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := fmt.Fprint(w, buf.String()); err != nil {
-		log.Println("Error:", err)
+		err = xerrors.Errorf("レスポンスボディへの書き込みが失敗しました。: %w", err)
+		log.Printf("Error: %+v\n", err)
 		f := Failure{
 			Message: "システムエラーが発生しました",
 		}
@@ -136,7 +140,8 @@ func (h *User) post(w http.ResponseWriter, r *http.Request) {
 	var form Form
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&form); err != nil {
-		log.Println("Error:", err)
+		err = xerrors.Errorf("リクエストボディのJSONデシリアライズが失敗しました: %w", err)
+		log.Printf("Error: %+v\n", err)
 		f := Failure{
 			Message: "システムエラーが発生しました",
 		}
@@ -154,7 +159,8 @@ func (h *User) post(w http.ResponseWriter, r *http.Request) {
 
 	//fmt.Printf("response body: %+v\n", form)
 	if err := h.UseCase.Save(form.FamilyName, form.GivenName, form.Age, form.Sex); err != nil {
-		log.Println("Error:", err)
+		err = xerrors.Errorf("ユーザ登録が失敗しました。: %w", err)
+		log.Printf("Error: %+v\n", err)
 		f := Failure{
 			Message: "システムエラーが発生しました",
 		}
