@@ -9,20 +9,17 @@ import (
 	"net/http"
 )
 
-type Success struct {
-	Message string `json:"message"`
-}
-
-func (s Success) returnJSON(w http.ResponseWriter) {
+func createResponse(w http.ResponseWriter, body interface{}) {
 	var buf bytes.Buffer
 	encoder := json.NewEncoder(&buf)
-	if err := encoder.Encode(s); err != nil {
-		err = xerrors.Errorf("レスポンスボディに書き込む内容のJSONシリアライズが失敗しました。: %w", err)
+	if err := encoder.Encode(body); err != nil {
+		err = xerrors.Errorf("レスポンスボディに書き込む情報のJSONシリアライズが失敗しました。: %w", err)
 		log.Printf("Error: %+v\n", err)
 		f := Failure{
 			Message: "システムエラーが発生しました",
 		}
 		f.returnJSON(w, http.StatusInternalServerError)
+		return
 	}
 	if _, err := fmt.Fprint(w, buf.String()); err != nil {
 		err = xerrors.Errorf("レスポンスボディへの書き込みが失敗しました。: %w", err)

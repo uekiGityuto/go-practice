@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/uekiGityuto/go-practice/usecase"
 	"golang.org/x/xerrors"
@@ -61,12 +59,16 @@ func (form *Form) validate() (ok bool, result map[string]string) {
 	return ok, result
 }
 
-type UserResponse struct {
+type GetResponse struct {
 	ID         string `json:"id"`
 	FamilyName string `json:"family_name"`
 	GivenName  string `json:"given_name"`
 	Age        int    `json:"age"`
 	Sex        string `json:"sex"`
+}
+
+type PostResponse struct {
+	ID string `json:"id"`
 }
 
 func (h *User) HandleUser(w http.ResponseWriter, r *http.Request) {
@@ -105,34 +107,13 @@ func (h *User) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := UserResponse{
+	createResponse(w, GetResponse{
 		ID:         entity.ID.String(),
 		FamilyName: entity.FamilyName,
 		GivenName:  entity.GivenName,
 		Age:        entity.Age,
 		Sex:        entity.Sex,
-	}
-
-	var buf bytes.Buffer
-	encoder := json.NewEncoder(&buf)
-	if err := encoder.Encode(user); err != nil {
-		err = xerrors.Errorf("レスポンスボディに書き込むユーザ情報のJSONシリアライズが失敗しました。: %w", err)
-		log.Printf("Error: %+v\n", err)
-		f := Failure{
-			Message: "システムエラーが発生しました",
-		}
-		f.returnJSON(w, http.StatusInternalServerError)
-		return
-	}
-	if _, err := fmt.Fprint(w, buf.String()); err != nil {
-		err = xerrors.Errorf("レスポンスボディへの書き込みが失敗しました。: %w", err)
-		log.Printf("Error: %+v\n", err)
-		f := Failure{
-			Message: "システムエラーが発生しました",
-		}
-		f.returnJSON(w, http.StatusInternalServerError)
-		return
-	}
+	})
 }
 
 func (h *User) post(w http.ResponseWriter, r *http.Request) {
@@ -156,9 +137,8 @@ func (h *User) post(w http.ResponseWriter, r *http.Request) {
 		f.returnJSON(w, http.StatusBadRequest)
 		return
 	}
-
-	//fmt.Printf("response body: %+v\n", form)
-	if err := h.UseCase.Save(form.FamilyName, form.GivenName, form.Age, form.Sex); err != nil {
+	id, err := h.UseCase.Save(form.FamilyName, form.GivenName, form.Age, form.Sex)
+	if err != nil {
 		err = xerrors.Errorf("ユーザ登録が失敗しました。: %w", err)
 		log.Printf("Error: %+v\n", err)
 		f := Failure{
@@ -168,6 +148,7 @@ func (h *User) post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s := Success{Message: "正常に登録しました。"}
-	s.returnJSON(w)
+	createResponse(w, PostResponse{
+		ID: id.String(),
+	})
 }

@@ -22,13 +22,21 @@ func (uc *User) Find(id string) (*entity.User, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("uuidのパースに失敗しました: %w", err)
 	}
-	return uc.repo.Find(uid)
+	user, err := uc.repo.Find(uid)
+	if err != nil {
+		return nil, xerrors.Errorf("ユーザ情報の取得に失敗しました。: %w", err)
+	}
+	return user, nil
 }
 
-func (uc *User) Save(familyName string, givenName string, age int, sex string) error {
+func (uc *User) Save(familyName string, givenName string, age int, sex string) (*uuid.UUID, error) {
 	user, err := entity.NewUser(familyName, givenName, age, sex)
 	if err != nil {
-		return xerrors.Errorf("userエンティティの生成に失敗しました。")
+		return nil, xerrors.Errorf("userエンティティの生成に失敗しました。")
 	}
-	return uc.repo.Save(user)
+	err = uc.repo.Save(user)
+	if err != nil {
+		return nil, xerrors.Errorf("userエンティティの登録に失敗しました。")
+	}
+	return &user.ID, nil
 }
