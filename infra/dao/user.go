@@ -24,16 +24,17 @@ func (dao *User) Find(id uuid.UUID) (*entity.User, error) {
 	}
 	var user entity.User
 	if err := row.Scan(&user.ID, &user.FamilyName, &user.GivenName, &user.Age, &user.Sex); err != nil {
-		// 存在しない場合にここに入る。
-		// TODO: 現状バリデーションエラー以外がシステムエラーになってしまっているので直したい。
-		return nil, xerrors.Errorf("'id=%s' のユーザ情報は存在しません。: %w", id.String(), err)
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, xerrors.Errorf("idによるユーザ情報の取得に失敗しました。: %w", row.Err())
 	}
 	return &user, nil
 }
 
 func (dao *User) Save(user *entity.User) error {
-	const sql = "INSERT INTO user (id, family_name, given_name, age, sex) VALUES (?, ?, ?, ?, ?)"
-	_, err := dao.db.Exec(sql, user.ID, user.FamilyName, user.GivenName, user.Age, user.Sex)
+	const dml = "INSERT INTO user (id, family_name, given_name, age, sex) VALUES (?, ?, ?, ?, ?)"
+	_, err := dao.db.Exec(dml, user.ID, user.FamilyName, user.GivenName, user.Age, user.Sex)
 	if err != nil {
 		return xerrors.Errorf("ユーザ情報のDBへの登録に失敗しました。: %w", err)
 	}

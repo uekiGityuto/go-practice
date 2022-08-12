@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/uekiGityuto/go-practice/usecase"
 	"golang.org/x/xerrors"
@@ -40,8 +41,8 @@ func (form *Form) validate() (ok bool, result map[string]string) {
 	})
 	if err := validate.Struct(form); err != nil {
 		ok = false
-		errors := err.(validator.ValidationErrors)
-		for _, err := range errors {
+		validationErrors := err.(validator.ValidationErrors)
+		for _, err := range validationErrors {
 			switch err.StructField() {
 			case "FamilyName":
 				result[err.Field()] = err.Tag()
@@ -98,6 +99,13 @@ func (h *User) get(w http.ResponseWriter, r *http.Request) {
 
 	entity, err := h.UseCase.Find(id)
 	if err != nil {
+		if errors.Is(err, usecase.ErrNotFound) {
+			f := Failure{
+				Message: usecase.ErrNotFound.Error(),
+			}
+			f.returnJSON(w, http.StatusBadRequest)
+			return
+		}
 		err = xerrors.Errorf("ユーザ情報取得が失敗しました。: %w", err)
 		log.Printf("Error: %+v\n", err)
 		f := Failure{
