@@ -23,7 +23,7 @@ func NewUser(uc usecase.User) *User {
 }
 
 type GetForm struct {
-	ID string `json:"id" validator:"required,uuid4"`
+	ID string `json:"id" validate:"required,uuid4"`
 }
 
 func (form *GetForm) validate() error {
@@ -51,10 +51,10 @@ func (form *GetForm) validate() error {
 }
 
 type PostForm struct {
-	FamilyName string `json:"family_name" validator:"required"`
-	GivenName  string `json:"given_name" validator:"required"`
-	Age        int    `json:"age" validator:"required,gte=0"`
-	Sex        string `json:"sex" validator:"required,sex"`
+	FamilyName string `json:"family_name" validate:"required"`
+	GivenName  string `json:"given_name" validate:"required"`
+	Age        int    `json:"age" validate:"required,gte=0"`
+	Sex        string `json:"sex" validate:"required,sex"`
 }
 
 func (form *PostForm) validate() error {
