@@ -16,12 +16,12 @@ func returnResponse(w http.ResponseWriter, body interface{}) {
 	encoder := json.NewEncoder(&buf)
 	if err := encoder.Encode(body); err != nil {
 		err = xerrors.Errorf("レスポンスボディに書き込む情報のJSONシリアライズが失敗しました。: %w", err)
-		log.Printf("Error: %+v\n", err)
+		log.Printf("%+v\n", err)
 		return
 	}
 	if _, err := fmt.Fprint(w, buf.String()); err != nil {
 		err = xerrors.Errorf("レスポンスボディへの書き込みが失敗しました。: %w", err)
-		log.Printf("Error: %+v\n", err)
+		log.Printf("%+v\n", err)
 		return
 	}
 }
@@ -64,7 +64,7 @@ func returnError(w http.ResponseWriter, err error) {
 	}
 
 	// システムエラーのハンドリング
-	log.Printf("Error: %+v\n", err)
+	log.Printf("%+v\n", err)
 	w.WriteHeader(http.StatusInternalServerError)
 	body := ErrorResponse{Message: "システムエラーです。"}
 	returnResponse(w, body)
