@@ -33,6 +33,7 @@ type ErrorResponse struct {
 
 func returnError(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// handlerで発生したユーザ定義エラーのハンドリング
 	switch err.(type) {
 	case ValidationError:
 		w.WriteHeader(http.StatusBadRequest)
@@ -53,17 +54,18 @@ func returnError(w http.ResponseWriter, err error) {
 		return
 	}
 
+	// usecaseで発生したユーザ定義エラーのハンドリング
 	switch {
 	case errors.Is(err, usecase.NotFoundErr):
 		w.WriteHeader(http.StatusBadRequest)
 		body := ErrorResponse{Message: usecase.NotFoundErr.Error()}
 		returnResponse(w, body)
 		return
-	default:
-		log.Printf("Error: %+v\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		body := ErrorResponse{Message: "システムエラーです。"}
-		returnResponse(w, body)
-		return
 	}
+
+	// システムエラーのハンドリング
+	log.Printf("Error: %+v\n", err)
+	w.WriteHeader(http.StatusInternalServerError)
+	body := ErrorResponse{Message: "システムエラーです。"}
+	returnResponse(w, body)
 }

@@ -21,7 +21,7 @@ func NewUser(uc usecase.User) *User {
 }
 
 type GetForm struct {
-	ID string `json:"id" validate:"required"`
+	ID string `json:"id" validate:"required,uuid"`
 }
 
 func (form *GetForm) validate() error {
