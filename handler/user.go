@@ -2,11 +2,9 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/uekiGityuto/go-practice/usecase"
 	"golang.org/x/xerrors"
-	"log"
 	"net/http"
 	"reflect"
 	"strings"
@@ -22,15 +20,11 @@ func NewUser(uc usecase.User) *User {
 	}
 }
 
-type Form struct {
-	FamilyName string `json:"family_name" validate:"required"`
-	GivenName  string `json:"given_name" validate:"required"`
-	Age        int    `json:"age" validate:"required,gte=0"`
-	Sex        string `json:"sex" validate:"required"`
+type GetForm struct {
+	ID string `json:"id" validate:"required"`
 }
 
-func (form *Form) validate() (ok bool, result map[string]string) {
-	result = make(map[string]string)
+func (form *GetForm) validate() error {
 	validate := validator.New()
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
@@ -39,25 +33,56 @@ func (form *Form) validate() (ok bool, result map[string]string) {
 		}
 		return name
 	})
+	detail := make(map[string]string)
 	if err := validate.Struct(form); err != nil {
-		ok = false
+		validationErrors := err.(validator.ValidationErrors)
+		for _, err := range validationErrors {
+			switch err.StructField() {
+			case "ID":
+				detail[err.Field()] = err.Tag()
+			}
+		}
+		return NewValidationError(detail)
+	} else {
+		return nil
+	}
+}
+
+type PostForm struct {
+	FamilyName string `json:"family_name" validate:"required"`
+	GivenName  string `json:"given_name" validate:"required"`
+	Age        int    `json:"age" validate:"required,gte=0"`
+	Sex        string `json:"sex" validate:"required"`
+}
+
+func (form *PostForm) validate() error {
+	validate := validator.New()
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
+	detail := make(map[string]string)
+	if err := validate.Struct(form); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
 		for _, err := range validationErrors {
 			switch err.StructField() {
 			case "FamilyName":
-				result[err.Field()] = err.Tag()
+				detail[err.Field()] = err.Tag()
 			case "GivenName":
-				result[err.Field()] = err.Tag()
+				detail[err.Field()] = err.Tag()
 			case "Age":
-				result[err.Field()] = err.Tag()
+				detail[err.Field()] = err.Tag()
 			case "Sex":
-				result[err.Field()] = err.Tag()
+				detail[err.Field()] = err.Tag()
 			}
 		}
+		return NewValidationError(detail)
 	} else {
-		ok = true
+		return nil
 	}
-	return ok, result
 }
 
 type GetResponse struct {
@@ -80,42 +105,27 @@ func (h *User) HandleUser(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		h.post(w, r)
 	default:
-		f := Failure{
-			Message: "サポートされていないHTTPメソッドです。",
-		}
-		f.returnJSON(w, http.StatusNotFound)
+		err := NotFound{message: "サポートされていないHTTPメソッドです。"}
+		returnError(w, err)
 	}
 }
 
 func (h *User) get(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
-	if id == "" {
-		f := Failure{
-			Message: "パラメータが不正です。",
-		}
-		f.returnJSON(w, http.StatusBadRequest)
+	form := GetForm{ID: id}
+	if err := form.validate(); err != nil {
+		returnError(w, err)
 		return
 	}
 
 	entity, err := h.UseCase.Find(id)
 	if err != nil {
-		if errors.Is(err, usecase.ErrNotFound) {
-			f := Failure{
-				Message: usecase.ErrNotFound.Error(),
-			}
-			f.returnJSON(w, http.StatusBadRequest)
-			return
-		}
 		err = xerrors.Errorf("ユーザ情報取得が失敗しました。: %w", err)
-		log.Printf("Error: %+v\n", err)
-		f := Failure{
-			Message: "システムエラーが発生しました",
-		}
-		f.returnJSON(w, http.StatusInternalServerError)
+		returnError(w, err)
 		return
 	}
 
-	createResponse(w, GetResponse{
+	returnResponse(w, GetResponse{
 		ID:         entity.ID.String(),
 		FamilyName: entity.FamilyName,
 		GivenName:  entity.GivenName,
@@ -126,37 +136,25 @@ func (h *User) get(w http.ResponseWriter, r *http.Request) {
 
 func (h *User) post(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var form Form
+	var form PostForm
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&form); err != nil {
 		err = xerrors.Errorf("リクエストボディのJSONデシリアライズが失敗しました: %w", err)
-		log.Printf("Error: %+v\n", err)
-		f := Failure{
-			Message: "システムエラーが発生しました",
-		}
-		f.returnJSON(w, http.StatusInternalServerError)
+		returnError(w, err)
 		return
 	}
-	if ok, result := form.validate(); !ok {
-		f := Failure{
-			Message: "パラメータが不正です。",
-			Detail:  result,
-		}
-		f.returnJSON(w, http.StatusBadRequest)
+	if err := form.validate(); err != nil {
+		returnError(w, err)
 		return
 	}
 	id, err := h.UseCase.Save(form.FamilyName, form.GivenName, form.Age, form.Sex)
 	if err != nil {
 		err = xerrors.Errorf("ユーザ登録が失敗しました。: %w", err)
-		log.Printf("Error: %+v\n", err)
-		f := Failure{
-			Message: "システムエラーが発生しました",
-		}
-		f.returnJSON(w, http.StatusInternalServerError)
+		returnError(w, err)
 		return
 	}
 
-	createResponse(w, PostResponse{
+	returnResponse(w, PostResponse{
 		ID: id.String(),
 	})
 }

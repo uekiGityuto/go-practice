@@ -26,7 +26,7 @@ func (uc *User) Find(id string) (*entity.User, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("ユーザ情報の取得に失敗しました。: %w", err)
 	} else if user == nil {
-		return nil, xerrors.Errorf("ユーザ情報の取得に失敗しました。: %w", ErrNotFound)
+		return nil, xerrors.Errorf("ユーザ情報の取得に失敗しました。: %w", NotFoundErr)
 	}
 	return user, nil
 }
