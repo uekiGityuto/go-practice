@@ -1,4 +1,4 @@
-package handler
+package validator
 
 import (
 	"github.com/go-playground/validator/v10"
@@ -25,4 +25,8 @@ func RegisterCustomValidator() error {
 		return xerrors.Errorf("カスタムバリデーションの登録に失敗しました。: %w", err)
 	}
 	return nil
+}
+
+func Get() *validator.Validate {
+	return validate
 }

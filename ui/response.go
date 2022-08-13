@@ -1,4 +1,4 @@
-package handler
+package ui
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-func returnResponse(w http.ResponseWriter, body interface{}) {
+func ReturnResponse(w http.ResponseWriter, body interface{}) {
 	var buf bytes.Buffer
 	encoder := json.NewEncoder(&buf)
 	if err := encoder.Encode(body); err != nil {
@@ -31,7 +31,7 @@ type ErrorResponse struct {
 	Detail  map[string]string `json:"detail,omitempty"`
 }
 
-func returnError(w http.ResponseWriter, err error) {
+func ReturnError(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	// handlerで発生したユーザ定義エラーのハンドリング
 	switch err.(type) {
@@ -40,9 +40,9 @@ func returnError(w http.ResponseWriter, err error) {
 		validationErr := err.(ValidationError)
 		body := ErrorResponse{
 			Message: validationErr.Error(),
-			Detail:  validationErr.detail,
+			Detail:  validationErr.Detail,
 		}
-		returnResponse(w, body)
+		ReturnResponse(w, body)
 		return
 	case NotFound:
 		w.WriteHeader(http.StatusNotFound)
@@ -50,7 +50,7 @@ func returnError(w http.ResponseWriter, err error) {
 		body := ErrorResponse{
 			Message: notFoundErr.Error(),
 		}
-		returnResponse(w, body)
+		ReturnResponse(w, body)
 		return
 	}
 
@@ -59,7 +59,7 @@ func returnError(w http.ResponseWriter, err error) {
 	case errors.Is(err, usecase.NotFoundErr):
 		w.WriteHeader(http.StatusBadRequest)
 		body := ErrorResponse{Message: usecase.NotFoundErr.Error()}
-		returnResponse(w, body)
+		ReturnResponse(w, body)
 		return
 	}
 
@@ -67,5 +67,5 @@ func returnError(w http.ResponseWriter, err error) {
 	log.Printf("%+v\n", err)
 	w.WriteHeader(http.StatusInternalServerError)
 	body := ErrorResponse{Message: "システムエラーです。"}
-	returnResponse(w, body)
+	ReturnResponse(w, body)
 }

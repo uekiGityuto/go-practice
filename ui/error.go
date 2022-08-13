@@ -1,25 +1,25 @@
-package handler
+package ui
 
 type ValidationError struct {
-	message string
-	detail  map[string]string
+	Message string
+	Detail  map[string]string
 }
 
 func (err ValidationError) Error() string {
-	return err.message
+	return err.Message
 }
 
 func NewValidationError(detail map[string]string) ValidationError {
 	return ValidationError{
-		message: "パラメーターが不正です。",
-		detail:  detail,
+		Message: "パラメーターが不正です。",
+		Detail:  detail,
 	}
 }
 
 type NotFound struct {
-	message string
+	Message string
 }
 
 func (err NotFound) Error() string {
-	return err.message
+	return err.Message
 }

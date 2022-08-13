@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/uekiGityuto/go-practice/handler"
 	"github.com/uekiGityuto/go-practice/infra/dao"
+	"github.com/uekiGityuto/go-practice/ui/handler"
+	"github.com/uekiGityuto/go-practice/ui/validator"
 	"github.com/uekiGityuto/go-practice/usecase"
 	"log"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 )
 
 func main() {
-	if err := handler.RegisterCustomValidator(); err != nil {
+	if err := validator.RegisterCustomValidator(); err != nil {
 		log.Printf("%+v\n", err)
 		os.Exit(1)
 	}

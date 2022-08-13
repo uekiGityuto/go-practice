@@ -3,6 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"github.com/go-playground/validator/v10"
+	"github.com/uekiGityuto/go-practice/ui"
+	customValidator "github.com/uekiGityuto/go-practice/ui/validator"
 	"github.com/uekiGityuto/go-practice/usecase"
 	"golang.org/x/xerrors"
 	"net/http"
@@ -21,10 +23,11 @@ func NewUser(uc usecase.User) *User {
 }
 
 type GetForm struct {
-	ID string `json:"id" validate:"required,uuid"`
+	ID string `json:"id" validator:"required,uuid4"`
 }
 
 func (form *GetForm) validate() error {
+	validate := customValidator.Get()
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 		if name == "-" {
@@ -41,20 +44,21 @@ func (form *GetForm) validate() error {
 				detail[err.Field()] = err.Tag()
 			}
 		}
-		return NewValidationError(detail)
+		return ui.NewValidationError(detail)
 	} else {
 		return nil
 	}
 }
 
 type PostForm struct {
-	FamilyName string `json:"family_name" validate:"required"`
-	GivenName  string `json:"given_name" validate:"required"`
-	Age        int    `json:"age" validate:"required,gte=0"`
-	Sex        string `json:"sex" validate:"required,sex"`
+	FamilyName string `json:"family_name" validator:"required"`
+	GivenName  string `json:"given_name" validator:"required"`
+	Age        int    `json:"age" validator:"required,gte=0"`
+	Sex        string `json:"sex" validator:"required,sex"`
 }
 
 func (form *PostForm) validate() error {
+	validate := customValidator.Get()
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 		if name == "-" {
@@ -77,7 +81,7 @@ func (form *PostForm) validate() error {
 				detail[err.Field()] = err.Tag()
 			}
 		}
-		return NewValidationError(detail)
+		return ui.NewValidationError(detail)
 	} else {
 		return nil
 	}
@@ -103,8 +107,8 @@ func (h *User) HandleUser(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		h.post(w, r)
 	default:
-		err := NotFound{message: "サポートされていないHTTPメソッドです。"}
-		returnError(w, err)
+		err := ui.NotFound{Message: "サポートされていないHTTPメソッドです。"}
+		ui.ReturnError(w, err)
 	}
 }
 
@@ -112,18 +116,18 @@ func (h *User) get(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	form := GetForm{ID: id}
 	if err := form.validate(); err != nil {
-		returnError(w, err)
+		ui.ReturnError(w, err)
 		return
 	}
 
 	entity, err := h.UseCase.Find(id)
 	if err != nil {
 		err = xerrors.Errorf("ユーザ情報取得が失敗しました。: %w", err)
-		returnError(w, err)
+		ui.ReturnError(w, err)
 		return
 	}
 
-	returnResponse(w, GetResponse{
+	ui.ReturnResponse(w, GetResponse{
 		ID:         entity.ID.String(),
 		FamilyName: entity.FamilyName,
 		GivenName:  entity.GivenName,
@@ -138,21 +142,21 @@ func (h *User) post(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&form); err != nil {
 		err = xerrors.Errorf("リクエストボディのJSONデシリアライズが失敗しました: %w", err)
-		returnError(w, err)
+		ui.ReturnError(w, err)
 		return
 	}
 	if err := form.validate(); err != nil {
-		returnError(w, err)
+		ui.ReturnError(w, err)
 		return
 	}
 	id, err := h.UseCase.Save(form.FamilyName, form.GivenName, form.Age, form.Sex)
 	if err != nil {
 		err = xerrors.Errorf("ユーザ登録が失敗しました。: %w", err)
-		returnError(w, err)
+		ui.ReturnError(w, err)
 		return
 	}
 
-	returnResponse(w, PostResponse{
+	ui.ReturnResponse(w, PostResponse{
 		ID: id.String(),
 	})
 }
