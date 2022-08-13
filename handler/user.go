@@ -25,7 +25,6 @@ type GetForm struct {
 }
 
 func (form *GetForm) validate() error {
-	validate := validator.New()
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 		if name == "-" {
@@ -52,11 +51,10 @@ type PostForm struct {
 	FamilyName string `json:"family_name" validate:"required"`
 	GivenName  string `json:"given_name" validate:"required"`
 	Age        int    `json:"age" validate:"required,gte=0"`
-	Sex        string `json:"sex" validate:"required"`
+	Sex        string `json:"sex" validate:"required,sex"`
 }
 
 func (form *PostForm) validate() error {
-	validate := validator.New()
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 		if name == "-" {

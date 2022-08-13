@@ -1,22 +1,24 @@
 package main
 
 import (
-	"fmt"
 	"github.com/uekiGityuto/go-practice/handler"
 	"github.com/uekiGityuto/go-practice/infra/dao"
 	"github.com/uekiGityuto/go-practice/usecase"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
-	fmt.Println("Server started.")
-	listen()
-}
-
-func listen() {
+	if err := handler.RegisterCustomValidator(); err != nil {
+		log.Printf("%+v\n", err)
+		os.Exit(1)
+	}
 	db := dao.NewDB()
 	userHandler := handler.NewUser(*usecase.NewUser(dao.NewUser(db)))
 	http.HandleFunc("/user", userHandler.HandleUser)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Printf("サーバの起動に失敗しました。%+v\n", err)
+		os.Exit(1)
+	}
 }
