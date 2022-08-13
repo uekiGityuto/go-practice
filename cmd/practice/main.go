@@ -16,7 +16,7 @@ func main() {
 		os.Exit(1)
 	}
 	db := dao.NewDB()
-	userHandler := handler.NewUser(*usecase.NewUser(dao.NewUser(db)))
+	userHandler := handler.NewUser(*usecase.NewUser(dao.NewUser(), db))
 	http.HandleFunc("/user", userHandler.HandleUser)
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Printf("サーバの起動に失敗しました。%+v\n", err)
