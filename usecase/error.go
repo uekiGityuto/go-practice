@@ -8,6 +8,6 @@ func (e Error) Error() string {
 	return e.reason
 }
 
-// TODO: Unwrap(), As(target interface{}), Is(target error)メソッドをErrorに実装
+// Unwrap(), As(target interface{}), Is(target error)メソッドをErrorに実装すべき？
 
 var ErrNotFound = Error{reason: "検索しましたが存在しませんでした。"}
