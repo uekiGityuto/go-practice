@@ -30,12 +30,13 @@ func (uc *User) Find(id string) (*entity.User, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("トランザクション開始が失敗しました。: %w", err)
 	}
+	// commit後にrollbackしてもrollbackされないので問題ない
+	defer tx.Rollback()
+
 	user, err := uc.repo.Find(tx, uid)
 	if err != nil {
-		tx.Rollback()
 		return nil, xerrors.Errorf("ユーザ情報の取得に失敗しました。: %w", err)
 	} else if user == nil {
-		tx.Rollback()
 		return nil, xerrors.Errorf("ユーザ情報の取得に失敗しました。: %w", NotFoundErr)
 	}
 	if err := tx.Commit(); err != nil {
@@ -55,9 +56,10 @@ func (uc *User) Save(familyName string, givenName string, age int, sex string) (
 	if err != nil {
 		return nil, xerrors.Errorf("トランザクション開始が失敗しました。: %w", err)
 	}
+	defer tx.Rollback()
+
 	err = uc.repo.Save(tx, user)
 	if err != nil {
-		tx.Rollback()
 		return nil, xerrors.Errorf("userエンティティの登録に失敗しました。")
 	}
 	if err := tx.Commit(); err != nil {
