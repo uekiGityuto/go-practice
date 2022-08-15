@@ -34,21 +34,21 @@ type ErrorResponse struct {
 func ReturnError(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	// handlerで発生したユーザ定義エラーのハンドリング
-	switch err.(type) {
-	case ValidationError:
+	var validationErr ValidationError
+	var notFound NotFound
+	switch {
+	case errors.As(err, &validationErr):
 		w.WriteHeader(http.StatusBadRequest)
-		validationErr := err.(ValidationError)
 		body := ErrorResponse{
 			Message: validationErr.Error(),
 			Detail:  validationErr.Detail,
 		}
 		ReturnResponse(w, body)
 		return
-	case NotFound:
+	case errors.As(err, &notFound):
 		w.WriteHeader(http.StatusNotFound)
-		notFoundErr := err.(NotFound)
 		body := ErrorResponse{
-			Message: notFoundErr.Error(),
+			Message: notFound.Error(),
 		}
 		ReturnResponse(w, body)
 		return
