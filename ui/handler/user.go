@@ -113,6 +113,7 @@ func (h *User) HandleUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *User) get(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.FormValue("id")
 	form := GetForm{ID: id}
 	if err := form.validate(); err != nil {
@@ -120,7 +121,7 @@ func (h *User) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entity, err := h.UseCase.Find(id)
+	entity, err := h.UseCase.Find(ctx, id)
 	if err != nil {
 		err = xerrors.Errorf("ユーザ情報取得が失敗しました。: %w", err)
 		ui.ReturnError(w, err)
@@ -138,6 +139,7 @@ func (h *User) get(w http.ResponseWriter, r *http.Request) {
 
 func (h *User) post(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+	ctx := r.Context()
 	var form PostForm
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&form); err != nil {
@@ -149,7 +151,7 @@ func (h *User) post(w http.ResponseWriter, r *http.Request) {
 		ui.ReturnError(w, err)
 		return
 	}
-	id, err := h.UseCase.Save(form.FamilyName, form.GivenName, form.Age, form.Sex)
+	id, err := h.UseCase.Save(ctx, form.FamilyName, form.GivenName, form.Age, form.Sex)
 	if err != nil {
 		err = xerrors.Errorf("ユーザ登録が失敗しました。: %w", err)
 		ui.ReturnError(w, err)
