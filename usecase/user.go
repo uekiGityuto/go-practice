@@ -38,7 +38,7 @@ func (uc *User) Find(ctx context.Context, id string) (*entity.User, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("ユーザ情報の取得に失敗しました。: %w", err)
 	} else if user == nil {
-		return nil, xerrors.Errorf("ユーザ情報の取得に失敗しました。: %w", NotFoundErr)
+		return nil, xerrors.Errorf("ユーザ情報の取得に失敗しました。: %w", ErrNotFound)
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, xerrors.Errorf("トランザクションのコミットが失敗しました。: %w", err)

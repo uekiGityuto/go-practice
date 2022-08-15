@@ -8,4 +8,6 @@ func (e Error) Error() string {
 	return e.reason
 }
 
-var NotFoundErr = Error{reason: "検索しましたが存在しませんでした。"}
+// TODO: Unwrap(), As(target interface{}), Is(target error)メソッドをErrorに実装
+
+var ErrNotFound = Error{reason: "検索しましたが存在しませんでした。"}

@@ -56,9 +56,9 @@ func ReturnError(w http.ResponseWriter, err error) {
 
 	// usecaseで発生したユーザ定義エラーのハンドリング
 	switch {
-	case errors.Is(err, usecase.NotFoundErr):
+	case errors.Is(err, usecase.ErrNotFound):
 		w.WriteHeader(http.StatusBadRequest)
-		body := ErrorResponse{Message: usecase.NotFoundErr.Error()}
+		body := ErrorResponse{Message: usecase.ErrNotFound.Error()}
 		ReturnResponse(w, body)
 		return
 	}
