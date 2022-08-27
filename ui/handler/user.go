@@ -99,7 +99,7 @@ type PostResponse struct {
 	ID string `json:"id"`
 }
 
-func (h *User) HandleUser(w http.ResponseWriter, r *http.Request) {
+func (h *User) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	switch strings.ToUpper(r.Method) {
 	case http.MethodGet:
