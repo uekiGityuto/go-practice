@@ -6,7 +6,6 @@ import (
 	"github.com/uekiGityuto/go-practice/ui"
 	customValidator "github.com/uekiGityuto/go-practice/ui/validator"
 	"github.com/uekiGityuto/go-practice/usecase"
-	"golang.org/x/xerrors"
 	"net/http"
 	"reflect"
 	"strings"
@@ -108,7 +107,7 @@ func (h *User) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.post(w, r)
 	default:
 		err := ui.NotFound{Message: "サポートされていないHTTPメソッドです。"}
-		ui.ReturnError(w, err)
+		ui.ReturnError(w, err, "")
 	}
 }
 
@@ -117,14 +116,13 @@ func (h *User) get(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	form := GetForm{ID: id}
 	if err := form.validate(); err != nil {
-		ui.ReturnError(w, err)
+		ui.ReturnError(w, err, "バリデーションエラーが発生しました。")
 		return
 	}
 
 	entity, err := h.UseCase.Find(ctx, id)
 	if err != nil {
-		err = xerrors.Errorf("ユーザ情報取得が失敗しました。: %w", err)
-		ui.ReturnError(w, err)
+		ui.ReturnError(w, err, "ユーザ情報取得が失敗しました。")
 		return
 	}
 
@@ -143,18 +141,16 @@ func (h *User) post(w http.ResponseWriter, r *http.Request) {
 	var form PostForm
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&form); err != nil {
-		err = xerrors.Errorf("リクエストボディのJSONデシリアライズが失敗しました: %w", err)
-		ui.ReturnError(w, err)
+		ui.ReturnError(w, err, "リクエストボディのJSONデシリアライズが失敗しました。")
 		return
 	}
 	if err := form.validate(); err != nil {
-		ui.ReturnError(w, err)
+		ui.ReturnError(w, err, "バリデーションエラーが発生しました。")
 		return
 	}
 	id, err := h.UseCase.Save(ctx, form.FamilyName, form.GivenName, form.Age, form.Sex)
 	if err != nil {
-		err = xerrors.Errorf("ユーザ登録が失敗しました。: %w", err)
-		ui.ReturnError(w, err)
+		ui.ReturnError(w, err, "ユーザ登録が失敗しました。")
 		return
 	}
 

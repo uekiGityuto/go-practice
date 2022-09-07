@@ -5,23 +5,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/uekiGityuto/go-practice/lib/log"
 	"github.com/uekiGityuto/go-practice/usecase"
-	"golang.org/x/xerrors"
-	"log"
+	"go.uber.org/zap"
 	"net/http"
 )
 
 func ReturnResponse(w http.ResponseWriter, body interface{}) {
 	var buf bytes.Buffer
+	logger := log.Logger
 	encoder := json.NewEncoder(&buf)
 	if err := encoder.Encode(body); err != nil {
-		err = xerrors.Errorf("レスポンスボディに書き込む情報のJSONシリアライズが失敗しました。: %w", err)
-		log.Printf("%+v\n", err)
+		logger.Error("レスポンスボディに書き込む情報のJSONシリアライズが失敗しました。", zap.Error(err))
 		return
 	}
 	if _, err := fmt.Fprint(w, buf.String()); err != nil {
-		err = xerrors.Errorf("レスポンスボディへの書き込みが失敗しました。: %w", err)
-		log.Printf("%+v\n", err)
+		logger.Error("レスポンスボディへの書き込みが失敗しました。", zap.Error(err))
 		return
 	}
 }
@@ -31,7 +30,8 @@ type ErrorResponse struct {
 	Detail  map[string]string `json:"detail,omitempty"`
 }
 
-func ReturnError(w http.ResponseWriter, err error) {
+func ReturnError(w http.ResponseWriter, err error, msg string) {
+	logger := log.Logger
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	// handlerで発生したユーザ定義エラーのハンドリング
 	var validationErr ValidationError
@@ -64,7 +64,7 @@ func ReturnError(w http.ResponseWriter, err error) {
 	}
 
 	// システムエラーのハンドリング
-	log.Printf("%+v\n", err)
+	logger.Error(msg, zap.Error(err))
 	w.WriteHeader(http.StatusInternalServerError)
 	body := ErrorResponse{Message: "システムエラーです。"}
 	ReturnResponse(w, body)

@@ -1,20 +1,34 @@
 package middleware
 
 import (
-	"fmt"
+	"github.com/uekiGityuto/go-practice/lib/log"
+	"go.uber.org/zap"
 	"net/http"
 	"time"
 )
 
 func Logger(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger := log.Logger
+		//defer logger.Sync()
+
 		start := time.Now()
 		path := r.URL.Path
 		method := r.Method
-		fmt.Printf("[start]time:%s, method:%s, path:%s\n", start.Format(time.RFC3339Nano), method, path)
+		logger.Info("[START]",
+			zap.String("method", method),
+			zap.String("path", path),
+		)
+
 		next.ServeHTTP(w, r)
+
 		end := time.Now()
-		elapsedTime := end.Sub(start).Milliseconds()
-		fmt.Printf("[END]time:%s, method:%s, path:%s, elapsed_time:%dms\n", end.Format(time.RFC3339Nano), method, path, elapsedTime)
+		elapsedTime := end.Sub(start)
+		logger.Info("[END]",
+			zap.String("method", method),
+			zap.String("method", method),
+			zap.String("path", path),
+			zap.Duration("elapsed_time(ms)", elapsedTime),
+		)
 	}
 }
